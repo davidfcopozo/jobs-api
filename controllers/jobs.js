@@ -10,7 +10,22 @@ const getAllJobs = async (req, res) => {
 };
 
 const getJob = async (req, res) => {
-  res.send("Get a job");
+  const {
+    //Destructure userId from user
+    user: { userId },
+    //Destructure jobId from params and name it jobId
+    params: { id: jobId },
+  } = req;
+
+  //Find one job in the database with the given id (jobId), that was created by the user with the given id (userId)
+  const job = await Job.findOne({ _id: jobId, createdBy: userId });
+
+  if (!job) {
+    console.log(`No job found with id ${jobId}`);
+    throw new NotFoundError(`No job found with id ${jobId}`);
+  }
+
+  res.status(StatusCodes.OK).json({ job });
 };
 
 const createJob = async (req, res) => {
@@ -21,11 +36,47 @@ const createJob = async (req, res) => {
 };
 
 const updateJob = async (req, res) => {
-  res.send("Update job");
+  const {
+    //Destructure company & position from body
+    body: { company, position },
+    //Destructure userId from user
+    user: { userId },
+    //Destructure jobId from params and name it jobId
+    params: { id: jobId },
+  } = req;
+
+  if (company === "" || position === "") {
+    console.log(`Company or positin fields cannot be empty`);
+    throw new BadRequestError(`Company or positin fields cannot be empty`);
+  }
+  //findOneAndUpdate({filter values}, update values, {options})
+  const job = await Job.findOneAndUpdate(
+    { _id: jobId, createdBy: userId },
+    req.body,
+    { new: true, runValidators: true }
+  );
+
+  if (!job) {
+    throw new NotFoundError(`No job found with id ${jobId}`);
+  }
+
+  res.status(StatusCodes.OK).json({ job });
 };
 
 const deleteJob = async (req, res) => {
-  res.send("Delete job");
+  const {
+    //Destructure userId from user
+    user: { userId },
+    //Destructure jobId from params and name it jobId
+    params: { id: jobId },
+  } = req;
+  const job = await Job.findOneAndRemove({ _id: jobId, createdBy: userId });
+
+  if (!job) {
+    throw new NotFoundError(`No job found with id ${jobId}`);
+  }
+
+  res.status(StatusCodes.OK).send();
 };
 
 module.exports = {
